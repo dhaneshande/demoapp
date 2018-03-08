@@ -1,0 +1,185 @@
+---
+
+resource_types:
+- name: artifactory 
+  type: docker-image
+  source:
+    repository: pivotalservices/artifactory-resource
+
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: cfcommunity/slack-notification-resource
+ 
+resources:
+- name: myapp
+  type: git
+  source:
+    uri: {{git-uri}}
+    branch: master
+
+- name: cf-env
+  type: cf
+  source:
+    api: {{pws-api}}
+    username: {{pws-username}}
+    password: {{pws-password}}
+    organization: {{pws-organization}}
+    space: {{pws-space}}
+    skip_cert_check: true
+
+- name: docker-image
+  type: docker-image
+  source:
+    email: {{docker-email}}
+    username: {{docker-username}}
+    password: {{docker-password}}
+    repository: {{docker-repo}}
+
+- name: uaa-build
+  type: artifactory
+  source:
+    endpoint: {{artifactory-endpoint}}
+    repository: {{artifactory-repo}}
+    regex: {{artifactory-regex}}
+    username: {{artifactory-username}}
+    password: {{artifactory-password}}
+    skip_ssl_verification: true
+
+- name: alert
+  type: slack-notification
+  source:
+    url: {{slack-uri}}
+
+jobs:
+ 
+- name: generate node-modules and mocha test
+  serial: true
+  disable_manual_trigger: false
+  plan:
+      - get: myapp
+        trigger: true
+        
+      - task: npm-test
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source: {repository: node, tag: "6" }
+          inputs:
+            - name: myapp
+              path: .
+          run:
+            path: npm
+            args: [ install-test ]
+        on_success:
+          put: alert
+          params:
+            channel: {{channel-name}}
+            username: {{user-name}}
+            icon_url: {{icon-url}}
+            text: <!channel> Mocha Test Success!
+        on_failure:
+          put: alert
+          params:
+            channel: {{channel-name}}
+            username: {{user-name}}
+            icon_url: {{icon-url}}
+            text: <!channel> Mocha Test Failed!
+
+- name: build-docker-image and pushed to dockerhub
+  public: true
+  serial: true
+  plan:
+  - get: myapp
+    trigger: true
+    passed:
+      - generate node-modules and mocha test
+  - put: docker-image
+    params:
+      build: myapp
+    on_success:
+      put: alert
+      params:
+        channel: {{channel-name}}
+        username: {{user-name}}
+        icon_url: {{icon-url}}
+        text: <!channel> Dockerize Success!
+    on_failure:
+      put: alert
+      params:
+        channel: {{channel-name}}
+        username: {{user-name}}
+        icon_url: {{icon-url}}
+        text: <!channel> Dockerize Failed!
+
+- name: build-artifact and put artifact in jfrog artifactory     
+  plan:
+  - get: myapp
+    trigger: true
+    passed:
+      - build-docker-image and pushed to dockerhub
+  - task: build
+    config:
+      platform: linux
+      inputs:
+      - name: myapp
+      outputs:
+      - name: uaa_war
+      image_resource:
+        type: docker-image
+        source: { repository: venki521/dockerimage }
+      run:
+        path: sh
+        args:
+        - -exc
+        - |
+          export TERM=dumb
+          cd myapp
+          npm pack
+          mv ./hello-world-1.0.0.tgz ../uaa_war
+  - put: uaa-build
+    params:
+      file: uaa_war/hello-world-*.tgz
+    on_success:
+      put: alert
+      params:
+        channel: {{channel-name}}
+        username: {{user-name}}
+        icon_url: {{icon-url}}
+        text: <!channel> Artifact stores successfully!
+    on_failure:
+      put: alert
+      params:
+        channel: {{channel-name}}
+        username: {{user-name}}
+        icon_url: {{icon-url}}
+        text: <!channel> Artifact stores Failed!
+
+- name: deploy to pws
+  serial: true
+  plan:
+  - get: myapp
+    trigger: true
+    passed:
+      - build-artifact and put artifact in jfrog artifactory
+  - put: cf-env
+    params:
+      manifest: myapp/manifest.yml
+      path: myapp
+    on_success:
+      put: alert
+      params:
+        channel: {{channel-name}}
+        username: {{user-name}}
+        icon_url: {{icon-url}}
+        text: <!channel> PWS Deployment Success!
+    on_failure:
+      put: alert
+      params:
+        channel: {{channel-name}}
+        username: {{user-name}}
+        icon_url: {{icon-url}}
+        text: <!channel> PWS Deployment Failed!
+
+
