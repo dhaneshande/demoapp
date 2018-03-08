@@ -15,7 +15,7 @@ resources:
 - name: myapp
   type: git
   source:
-    uri: {{git-uri}}
+    uri: https://github.com/dhaneshande/cf-sample-app-nodejs
     branch: master
 
 - name: cf-env
@@ -49,7 +49,7 @@ resources:
 - name: alert
   type: slack-notification
   source:
-    url: {{slack-uri}}
+    url: https://hooks.slack.com/services/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
 
 jobs:
  
@@ -75,16 +75,16 @@ jobs:
         on_success:
           put: alert
           params:
-            channel: {{channel-name}}
-            username: {{user-name}}
-            icon_url: {{icon-url}}
+            channel: "#general"
+            username: dhanesh
+            icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
             text: <!channel> Mocha Test Success!
         on_failure:
           put: alert
           params:
-            channel: {{channel-name}}
-            username: {{user-name}}
-            icon_url: {{icon-url}}
+            channel: "#general"
+            username: dhanesh
+            icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
             text: <!channel> Mocha Test Failed!
 
 - name: build-docker-image and pushed to dockerhub
@@ -101,16 +101,16 @@ jobs:
     on_success:
       put: alert
       params:
-        channel: {{channel-name}}
-        username: {{user-name}}
-        icon_url: {{icon-url}}
+        channel: "#general"
+        username: dhanesh
+        icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
         text: <!channel> Dockerize Success!
     on_failure:
       put: alert
       params:
-        channel: {{channel-name}}
-        username: {{user-name}}
-        icon_url: {{icon-url}}
+        channel: "#general"
+        username: dhanesh
+        icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
         text: <!channel> Dockerize Failed!
 
 - name: build-artifact and put artifact in jfrog artifactory     
@@ -128,7 +128,7 @@ jobs:
       - name: uaa_war
       image_resource:
         type: docker-image
-        source: { repository: venki521/dockerimage }
+        source: { repository: dhaneshande/demoapp }
       run:
         path: sh
         args:
@@ -144,16 +144,16 @@ jobs:
     on_success:
       put: alert
       params:
-        channel: {{channel-name}}
-        username: {{user-name}}
-        icon_url: {{icon-url}}
+        channel: "#general"
+        username: dhanesh
+        icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
         text: <!channel> Artifact stores successfully!
     on_failure:
       put: alert
       params:
-        channel: {{channel-name}}
-        username: {{user-name}}
-        icon_url: {{icon-url}}
+        channel: "#general"
+        username: dhanesh
+        icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
         text: <!channel> Artifact stores Failed!
 
 - name: deploy to pws
@@ -170,16 +170,14 @@ jobs:
     on_success:
       put: alert
       params:
-        channel: {{channel-name}}
-        username: {{user-name}}
-        icon_url: {{icon-url}}
+        channel: "#general"
+        username: dhanesh
+        icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
         text: <!channel> PWS Deployment Success!
     on_failure:
       put: alert
       params:
-        channel: {{channel-name}}
-        username: {{user-name}}
-        icon_url: {{icon-url}}
+        channel: "#general"
+        username: dhanesh
+        icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
         text: <!channel> PWS Deployment Failed!
-
-
