@@ -78,14 +78,14 @@ jobs:
             channel: "#general"
             username: dhanesh
             icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-            text: <!channel> Mocha Test Success!
+            text:   Testing of the app is Successfully Done!
         on_failure:
           put: alert
           params:
             channel: "#general"
             username: dhanesh
             icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-            text: <!channel> Mocha Test Failed!
+            text:  Test Failed!
 
 - name: build-docker-image and pushed to dockerhub
   public: true
@@ -104,14 +104,14 @@ jobs:
         channel: "#general"
         username: dhanesh
         icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-        text: <!channel> Dockerize Success!
+        text:  Docker image upload is Successfully Done!
     on_failure:
       put: alert
       params:
         channel: "#general"
         username: dhanesh
         icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-        text: <!channel> Dockerize Failed!
+        text:  Docker image upload Failed!
 
 - name: build-artifact and put artifact in jfrog artifactory     
   plan:
@@ -147,14 +147,14 @@ jobs:
         channel: "#general"
         username: dhanesh
         icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-        text: <!channel> Artifact stores successfully!
+        text:  storing of the app to Artifact is successfull!
     on_failure:
       put: alert
       params:
         channel: "#general"
         username: dhanesh
         icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-        text: <!channel> Artifact stores Failed!
+        text:  Artifact storing Failed!
 
 - name: deploy to pws
   serial: true
@@ -173,11 +173,11 @@ jobs:
         channel: "#general"
         username: dhanesh
         icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-        text: <!channel> PWS Deployment Success!
+        text:  PWS Deployment Success!
     on_failure:
       put: alert
       params:
         channel: "#general"
         username: dhanesh
         icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-        text: <!channel> PWS Deployment Failed!
+        text:  PWS Deployment Failed!
