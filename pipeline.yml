@@ -137,10 +137,10 @@ jobs:
           export TERM=dumb
           cd myapp
           npm pack
-          mv ./hello-world-1.0.0.tgz ../uaa_war
+          mv ./nodejs-1.0.0.tgz ../uaa_war
   - put: uaa-build
     params:
-      file: uaa_war/hello-world-*.tgz
+      file: uaa_war/nodejs-*.tgz
     on_success:
       put: alert
       params:
