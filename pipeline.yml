@@ -15,7 +15,7 @@ resources:
 - name: myapp
   type: git
   source:
-    uri: https://github.com/dhaneshande/cf-sample-app-nodejs
+    uri: https://github.com/dhaneshande/demoapp.git
     branch: master
 
 - name: cf-env
