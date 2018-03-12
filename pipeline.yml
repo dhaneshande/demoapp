@@ -140,7 +140,7 @@ jobs:
           mv ./cf-nodejs-1.0.0.tgz ../uaa_war
   - put: uaa-build
     params:
-      file: uaa_war/nodejs-*.tgz
+      file: uaa_war/cf-nodejs-*.tgz
     on_success:
       put: alert
       params:
