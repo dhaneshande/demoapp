@@ -137,6 +137,7 @@ jobs:
           export TERM=dumb
           cd myapp
           npm pack
+          ls -la
           mv ./cf-nodejs-1.0.0.tgz ../uaa_war
           ls -la
   - put: uaa-build
