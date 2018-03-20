@@ -138,7 +138,6 @@ jobs:
           cd myapp
           npm pack
           mv ./cf-nodejs-1.0.0.tgz ../uaa_war
-          cd uaa_war
           ls -la
   - put: uaa-build
     params:
