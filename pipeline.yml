@@ -142,7 +142,7 @@ jobs:
           ls -la
   - put: uaa-build
     params:
-      file: uaa_war/cf-nodejs-1.0.0.tgz
+      file: uaa_war/cf-nodejs-*.tgz
     on_success:
       put: alert
       params:
