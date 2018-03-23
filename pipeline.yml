@@ -15,7 +15,7 @@ resources:
 - name: myapp
   type: git
   source:
-    uri: https://github.com/dhaneshande/demoapp.git
+    uri: https://github.com/dhaneshande/cicdwithPCF.git
     branch: master
 
 - name: cf-env
@@ -27,14 +27,6 @@ resources:
     organization: {{pws-organization}}
     space: {{pws-space}}
     skip_cert_check: true
-
-- name: docker-image
-  type: docker-image
-  source:
-    email: {{docker-email}}
-    username: {{docker-username}}
-    password: {{docker-password}}
-    repository: {{docker-repo}}
 
 - name: uaa-build
   type: artifactory
@@ -53,72 +45,12 @@ resources:
 
 jobs:
  
-- name: generate node-modules and mocha test
+- name: Build Unit Tests And Upload to JFrog Artifactory 
   serial: true
-  disable_manual_trigger: false
-  plan:
-      - get: myapp
-        trigger: true
-        
-      - task: npm-test
-        config:
-          platform: linux
-          image_resource:
-            type: docker-image
-            source: {repository: node, tag: "6" }
-          inputs:
-            - name: myapp
-              path: .
-          run:
-            path: npm
-            args: [ install-test ]
-        on_success:
-          put: alert
-          params:
-            channel: "#general"
-            username: dhanesh
-            icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-            text:   Testing of the app is Successfully Done!
-        on_failure:
-          put: alert
-          params:
-            channel: "#general"
-            username: dhanesh
-            icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-            text:  Test Failed!
-
-- name: build-docker-image and pushed to dockerhub
-  public: true
-  serial: true
+  disable_manual_trigger: false    
   plan:
   - get: myapp
     trigger: true
-    passed:
-      - generate node-modules and mocha test
-  - put: docker-image
-    params:
-      build: myapp
-    on_success:
-      put: alert
-      params:
-        channel: "#general"
-        username: dhanesh
-        icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-        text:  Docker image upload is Successfully Done!
-    on_failure:
-      put: alert
-      params:
-        channel: "#general"
-        username: dhanesh
-        icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-        text:  Docker image upload Failed!
-
-- name: build-artifact and put artifact in jfrog artifactory     
-  plan:
-  - get: myapp
-    trigger: true
-    passed:
-      - build-docker-image and pushed to dockerhub
   - task: build
     config:
       platform: linux
@@ -128,7 +60,7 @@ jobs:
       - name: uaa_war
       image_resource:
         type: docker-image
-        source: { repository: dhaneshande/demoapp }
+        source: { repository: node, tag: "6" }
       run:
         path: sh
         args:
@@ -136,38 +68,75 @@ jobs:
         - |
           export TERM=dumb
           cd myapp
+          npm install
+          npm run test
+          npm run test:coverage
+          npm run test:report
           npm pack
           ls -la
-          mv ./cf-nodejs-1.0.0.tgz ../uaa_war
+          mv ./myapp-0.0.0.tgz ../uaa_war
           ls -la
   - put: uaa-build
     params:
-      file: uaa_war/cf-nodejs-*.tgz
+      file: uaa_war/myapp-*.tgz
     on_success:
       put: alert
       params:
         channel: "#general"
         username: dhanesh
         icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-        text:  storing of the app to Artifact is successfull!
+        text:  Building of Node.js app unit tests is successfull and storing of the build artifacts to Artifactory is successfull!
     on_failure:
       put: alert
       params:
         channel: "#general"
         username: dhanesh
         icon_url: http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png
-        text:  Artifact storing Failed!
+        text:  Building of Node.js app unit tests Failed and storing of the build artifacts to Artifactory Failed!
 
 - name: deploy to pws
   serial: true
   plan:
-  - get: myapp
-    trigger: true
+  - get: uaa-build
     passed:
-      - build-artifact and put artifact in jfrog artifactory
+      - Build Unit Tests And Upload to JFrog Artifactory 
+    trigger: true
+  - get: myapp
+    passed:
+      - Build Unit Tests And Upload to JFrog Artifactory
+    trigger: true
+  - task: retrieve
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: ubuntu
+          tag: "latest"
+      inputs:
+      - name: uaa-build
+      outputs:
+      - name: uaaa
+      run:
+        path: sh
+        args:
+        - -exc
+        - |
+          export TERM=dumb
+          ls -la
+          ls -la uaa-build
+          chmod -R 777 uaa-build
+          ls -la
+          cd uaa-build
+          tar -xvzf myapp-0.0.0.tgz
+          ls -la
+          cd package
+          ls -la
+          cp -r manifest.yml uaaa
+          cat uaaa
   - put: cf-env
     params:
-      manifest: myapp/manifest.yml
+      manifest: uaaa/package/manifest.yml
       path: myapp
     on_success:
       put: alert
